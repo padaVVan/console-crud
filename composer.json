@@ -1,0 +1,23 @@
+{
+    "name": "padavvan/console-crud",
+    "description": "CRUD operation in console",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Oleg Koltsov",
+            "email": "ok@crtweb.ru"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "yiisoft/yii2": "~2.0.0",
+    },
+    "autoload": {
+        "psr-0": {
+            "padavvan\\console":   "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "require": {}
+}
