@@ -6,7 +6,7 @@ use yii\console\Controller;
 use yii\data\ActiveDataProvider;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Console;
-use padavvan\console\helpers\Msg;
+use padavvan\console\helpers\Message as Msg;
 
 /**
  * Class AccountController
@@ -29,17 +29,18 @@ class BaseController extends Controller
     /**
      * @var integer
      */
-    static $currentPage = 0;
+    public static $currentPage = 0;
 
     /**
      * @var integer
      */
-    static $totalPages = 0;
+    public static $totalPages = 0;
 
     /**
      * @return [type] [description]
      */
-    public function getColumnConfig() {
+    public function getColumnConfig()
+    {
         return [];
     }
 
@@ -197,6 +198,11 @@ class BaseController extends Controller
         ]);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
     public function admin()
     {
         $dataProvider = new ActiveDataProvider([

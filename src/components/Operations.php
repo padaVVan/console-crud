@@ -1,6 +1,9 @@
 <?php
 namespace padavvan\console\components;
 
+/**
+ * Operations store
+ */
 class Operations
 {
     const ADMIN = 'i';
