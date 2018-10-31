@@ -2,19 +2,34 @@
 
 namespace padavvan\console\commands;
 
+use padavvan\console\components\Operations;
+use padavvan\console\helpers\Message as Msg;
 use yii\console\Controller;
 use yii\data\ActiveDataProvider;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Console;
-use padavvan\console\helpers\Message as Msg;
 
 /**
  * Class AccountController
+ *
  * @package ledger\commands
  */
 class BaseController extends Controller
 {
-    public $model = null;
+    /**
+     * @var integer
+     */
+    public static $currentPage = 0;
+
+    /**
+     * @var integer
+     */
+    public static $totalPages = 0;
+
+    /**
+     * @var
+     */
+    public $model;
 
     /**
      * @var int SQL limit
@@ -27,52 +42,26 @@ class BaseController extends Controller
     public $sort = [];
 
     /**
-     * @var integer
-     */
-    public static $currentPage = 0;
-
-    /**
-     * @var integer
-     */
-    public static $totalPages = 0;
-
-    /**
-     * @return [type] [description]
-     */
-    public function getColumnConfig()
-    {
-        return [];
-    }
-
-    /**
-     * [getHeaderConfig description]
-     * @return [type] [description]
-     */
-    public function getHeaderConfig()
-    {
-        return [];
-    }
-
-    /**
      * @param string $actionID
+     *
      * @return array
      */
     public function options($actionID)
     {
         $options = parent::options($actionID);
-        switch ($actionID) {
-            case 'index':
-                $localOptions = ['limit', 'sort'];
-                break;
-            default:
-                $localOptions = [];
+        if ($actionID === 'index') {
+            $localOptions = ['limit', 'sort'];
+        } else {
+            $localOptions = [];
         }
 
         return ArrayHelper::merge($options, $localOptions);
     }
 
     /**
+     * @param $model
      *
+     * @throws \yii\base\ExitException
      */
     public function actionIndex($model)
     {
@@ -108,7 +97,6 @@ class BaseController extends Controller
                     $this->admin();
                     break;
                 case Operations::PAGE_LAST:
-                var_dump(self::$totalPages);
                     self::$currentPage = self::$totalPages;
                     $this->admin();
                     break;
@@ -128,32 +116,29 @@ class BaseController extends Controller
             }
 
             if (!$skipMenu) {
-                $operation = $this->select('Chose operation', [
-                    '<<' => 'First',
-                    '<' => 'Prev',
-                    '>' => 'Next',
-                    '>>' => 'Last',
-                    'c' => 'Create',
-                    'r' => 'Read',
-                    'u' => 'Update',
-                    'd' => 'Delete',
-                    'i' => 'Index',
-                    'e' => 'Exit',
-                ]);
+                $operation = $this->select(
+                    'Chose operation',
+                    [
+                        '<<' => 'First',
+                        '<'  => 'Prev',
+                        '>'  => 'Next',
+                        '>>' => 'Last',
+                        'c'  => 'Create',
+                        'r'  => 'Read',
+                        'u'  => 'Update',
+                        'd'  => 'Delete',
+                        'i'  => 'Index',
+                        'e'  => 'Exit',
+                    ]
+                );
             }
         }
     }
 
     /**
-     * @param $id
-     */
-    public function actionUpdate($id)
-    {
-        $this->update($id);
-    }
-
-    /**
      * @param null $id
+     *
+     * @throws \yii\base\ExitException
      */
     public function update($id = null)
     {
@@ -168,7 +153,7 @@ class BaseController extends Controller
         $header = Msg::str('Change record: %s', [$id])->compile();
         $length = Console::ansiStrlen($header);
 
-        echo $header . "\n";
+        echo $header."\n";
         Msg::delimiter($length > 80 ? 80 : $length, [], '=')->output();
 
         foreach ($model->attributes as $key => $value) {
@@ -187,79 +172,10 @@ class BaseController extends Controller
     }
 
     /**
-     *
-     */
-    public function actionCreate()
-    {
-        $model = new $this->model;
-
-        $this->render('create', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @return void
-     */
-    public function admin()
-    {
-        $dataProvider = new ActiveDataProvider([
-            'query' => $this->model::find(),
-            'pagination' => [
-                'pageSize' => $this->limit,
-                'page' => self::$currentPage,
-            ],
-        ]);
-
-        if ($dataProvider->totalCount) {
-            $dataProvider->getPagination()->totalCount = $dataProvider->totalCount;
-            self::$totalPages = $dataProvider->getPagination()->getPageCount() - 1;
-            Msg::str('Total: %s records. Pagination: %s page from %s pages', [
-                \Yii::$app->formatter->asDecimal($dataProvider->totalCount),
-                self::$currentPage + 1,
-                $dataProvider->getPagination()->getPageCount()
-            ])->output();
-        }
-
-        // HEADER
-        // ======
-
-        $header = Msg::str('|' . str_repeat(' %s |', count($this->getHeaderConfig())), $this->getHeaderConfig())->compile();
-        $this->delimiter(Console::ansiStrlen($header));
-        echo "$header\n";
-        $this->delimiter(Console::ansiStrlen($header));
-
-        // BODY
-        // ====
-        //
-        $conf = $this->getColumnConfig();
-        foreach ($dataProvider->models as $model) {
-            $row = $this->createRow($model->getAttributes(array_keys($conf)), array_values($conf));
-            Msg::str('|' . str_repeat(' %s |', count($row)), $row)->output();
-        }
-        $this->delimiter(Console::ansiStrlen($header));
-    }
-
-    /**
      * @param $id
-     */
-    public function actionDelete($id)
-    {
-        if (!Console::confirm('Are you sure you want to delete the record?')) {
-            \Yii::$app->end(1);
-        }
-
-        $model = $this->findModel($id);
-        if ($model->delete()) {
-            Msg::success('Record [%s] has been deleted', [$id])->output();
-        }
-    }
-
-    /**
-     * @param $id
-     * @return Account
+     *
+     * @return mixed
+     * @throws \yii\base\ExitException
      */
     private function findModel($id)
     {
@@ -274,14 +190,127 @@ class BaseController extends Controller
     }
 
     /**
+     * Undocumented function
+     *
+     * @return void
+     */
+    public function admin()
+    {
+        $dataProvider = new ActiveDataProvider(
+            [
+                'query'      => $this->model::find(),
+                'pagination' => [
+                    'pageSize' => $this->limit,
+                    'page'     => self::$currentPage,
+                ],
+            ]
+        );
+
+        if ($dataProvider->totalCount) {
+            $dataProvider->getPagination()->totalCount = $dataProvider->totalCount;
+            self::$totalPages = $dataProvider->getPagination()->getPageCount() - 1;
+            Msg::str(
+                'Total: %s records. Pagination: %s page from %s pages',
+                [
+                    \Yii::$app->formatter->asDecimal($dataProvider->totalCount),
+                    self::$currentPage + 1,
+                    $dataProvider->getPagination()->getPageCount(),
+                ]
+            )->output();
+        }
+
+        // HEADER
+        // ======
+
+        $header = Msg::str('|'.str_repeat(' %s |', count($this->getHeaderConfig())), $this->getHeaderConfig())->compile(
+        );
+        $this->delimiter(Console::ansiStrlen($header));
+        echo "$header\n";
+        $this->delimiter(Console::ansiStrlen($header));
+
+        // BODY
+        // ====
+        //
+        $conf = $this->getColumnConfig();
+        foreach ($dataProvider->models as $model) {
+            $row = $this->createRow($model->getAttributes(array_keys($conf)), array_values($conf));
+            Msg::str('|'.str_repeat(' %s |', count($row)), $row)->output();
+        }
+        $this->delimiter(Console::ansiStrlen($header));
+    }
+
+    /**
+     * @return array
+     */
+    public function getHeaderConfig()
+    {
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getColumnConfig()
+    {
+        return [];
+    }
+
+    /**
      * @param $values
      * @param $config
+     *
      * @return array
      */
     private function createRow($values, $config)
     {
-        return array_map(function ($value, $tpl) use ($config) {
-            return sprintf($tpl, $value);
-        }, $values, $config);
+        return array_map(
+            function ($value, $tpl) {
+                return sprintf($tpl, $value);
+            },
+            $values,
+            $config
+        );
+    }
+
+    /**
+     * @param $id
+     *
+     * @throws \yii\base\ExitException
+     */
+    public function actionUpdate($id)
+    {
+        $this->update($id);
+    }
+
+    /**
+     * @throws \yii\base\InvalidParamException
+     */
+    public function actionCreate()
+    {
+        $model = new $this->model;
+
+        $this->render(
+            'create',
+            [
+                'model' => $model,
+            ]
+        );
+    }
+
+    /**
+     * @param $id
+     *
+     * @throws \yii\base\ExitException
+     */
+    public function actionDelete($id)
+    {
+        if (!Console::confirm('Are you sure you want to delete the record?')) {
+            \Yii::$app->end(1);
+        }
+
+        $model = $this->findModel($id);
+        if ($model->delete()) {
+            Msg::success('Record [%s] has been deleted', [$id])->output();
+        }
     }
 }
